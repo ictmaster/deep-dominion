@@ -1,3 +1,4 @@
+from datetime import datetime
 def LOG(string):
 	print(string)
 	logfile = "./logfile.log"

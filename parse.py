@@ -9,6 +9,7 @@ import time
 
 # Using scandir since folder is so large
 start_time = time.time()
+
 # Regular expression for finding turn stuff
 turn_regex = re.compile('\s*--- .*\'s turn (\d) ---$')
 
@@ -24,8 +25,12 @@ for entry in os.scandir('./data/min_data_extracted/'):
 		current_turn = -1
 		for line in stripped.splitlines():
 			if re.match(turn_regex, line):
-				print(line)
-				#current_turn = int(line.split()[3])
+				current_turn = int(line.split()[-2])
+			if 'cards in supply:' in line:
+				game['cards'] = line.replace('cards in supply:','').replace(',','').replace('and','').split()
+
+			if current_turn != -1:
+				game['turns'] = game.get('turns', {})
 
 
 print("Script took {0} seconds...".format(time.time()-start_time))
