@@ -1,5 +1,6 @@
 from __future__ import print_function
 from datetime import date, timedelta, datetime
+from jlib import LOG
 import os
 import urllib2
 
@@ -7,13 +8,6 @@ data_dir = "./data/"
 base_url = "https://dominion.isotropic.org/gamelog/{year}/{year}{month}{day}.tar.bz2"
 from_date = date(2010,10,11)
 to_date = date(2013,03,15)
-
-
-def LOG(string):
-	print(string)
-	logfile = "./logfile.log"
-	with open(logfile, 'a') as logfile:
-		logfile.write("["+str(datetime.now())+"]>> "+string+'\n')
 
 LOG("BEGIN DOWNLOAD")
 
@@ -29,16 +23,19 @@ def daterange(d1, d2):
 def count_daterange(d1,d2):
 	return len(range((d2 - d1).days + 1))
 
-dates = daterange(from_date, to_date)
-
-downloads_complete = 0
-for d in dates:
+dates = list(daterange(from_date, to_date))
+start_at = 430
+downloads_complete = start_at
+for d in dates[start_at:]:
 	url = base_url.format(year=d.strftime('%Y'), month=d.strftime('%m'), day=d.strftime('%d'))
 	file_name = data_dir+url.split('/')[-1]
 	try:
 		u = urllib2.urlopen(url)
 	except urllib2.HTTPError as he:
 		LOG("HTTP ERROR {code} with date {date}".format(code=he.code, date=d))
+		continue
+	except urllib2.URLError as ue:
+		LOG("URL ERROR")
 		continue
 	f = open(file_name, 'wb')
 	meta = u.info()
