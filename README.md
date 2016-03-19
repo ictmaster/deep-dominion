@@ -2,8 +2,8 @@
 Deep Learning for Dominion project created for the IKT441 - Deep learning course at the University of Agder.
 
 ## Dependencies
- - Python 2.7
- - [Keras](https://github.com/fchollet/keras) with [Theano](https://github.com/Theano/Theano) backend
+ - Python 3.x
+ - [Pyquery](https://pypi.python.org/pypi/pyquery)
 
 ## Authors
  - Jonas Natten - [jonas@natten.it](mailto:jonas@natten.it)
