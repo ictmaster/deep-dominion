@@ -36,7 +36,9 @@ def download_textfile(url):
 		except urllib.error.HTTPError as httpe:
 			LOG("{code} error given by {fname} ({link})".format(code=httpe.code, fname=fname, link=url), False)
 		except urllib.error.URLError as urlerror:
-			LOG("Error given by {fname} ({link})".format(fname=fname, link=url), False)
+			LOG("URLError given by {fname} ({link})".format(fname=fname, link=url), False)
+		except ConnectionResetError as conreseterror:
+			LOG("ConnectionResetError given by {fname} ({link})".format(fname=fname, link=url), False)
 
 def print_progress(size, start_time):
 	global done
@@ -46,6 +48,9 @@ def print_progress(size, start_time):
 		time.sleep(1)
 
 if __name__ == '__main__':
+	LOG("----------------------------------")
+	LOG("-----------START SCRIPT-----------")
+	LOG("----------------------------------")
 	start_time = time.time()
 	download_folder = './data/goko/'
 	linkfile = 'linkfile.txt'
