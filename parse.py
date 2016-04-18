@@ -5,7 +5,7 @@ import os
 import time
 from pymongo import MongoClient
 import re
-
+import sys
 
 start_time = time.time()
 
@@ -50,35 +50,31 @@ for entry in os.scandir('./data/min_goko/'):
 				players[player] = str(len(players))
 				starting_cards[players[player]] = scards
 
-				hands[players[player]]['turn'] = current_turn
-				hands[players[player]]['cards'] = []
-				hands[players[player]]['deck'] = scards
+				hands[players[player]][current_turn] = {'hand':[],'deck':scards}
 
 			# Who's turn and turn nr
+			# TODO: SET DECK FROM LAST TURN BECAUSE MAYBE TRASH
 			if turn_regex.match(line):
 				current_player = players[line[11:].split(':')[0]]
 				current_turn = int(line.split('turn ')[1][:-10])
+				hands[current_player][current_turn] = {'hand':[],'deck':[]}
 
 			if line.find(gains_match) != -1:
 				gains = list(map(str.strip,line[line.find(gains_match)+len(gains_match):].split(',')))
 				player = line[:line.find(gains_match)].strip()
-				hands[players[player]]['deck'].extend(gains)
+				hands[players[player]][current_turn]['deck'].extend(gains)
 
 
 			if line.find(draws_match) != -1:
 				draws = list(map(str.strip,line[line.find(draws_match)+len(draws_match):].split(',')))
 				player = line[:line.find(draws_match)].strip()
 
-				
-				if hands[players[player]]['turn'] != current_turn:
-					hands[players[player]]['turn'] = current_turn
-					hands[players[player]]['cards'] = draws
-				else:
-					hands[players[player]]['cards'].extend(draws)
+				hands[players[player]][current_turn]['hand'].extend(draws)
 			
 			if line.find(trashes_match) != -1:
 				trash = list(map(str.strip,line[line.find(trashes_match)+len(trashes_match):].split(',')))
-				player = line[:line.find(trashes_match)].strip()				
+				player = line[:line.find(trashes_match)].strip()
+
 				#print("PLAYER {p} TRASHES {t} ON {cp}'s TURN {tn}]".format(p=player,t=trash,cp=current_player,tn=current_turn))
 
 				reavealed = []
@@ -89,14 +85,14 @@ for entry in os.scandir('./data/min_goko/'):
 
 				for t in trash:
 					try:
+						# TODO: SET DECK FROM LAST TURN BECAUSE MAYBE TRASH
 						if t in revealed:
-							hands[players[player]]['deck'].remove(t)
+							hands[players[rplayer]][current_turn]['deck'].remove(t)
 						else:
-							hands[players[player]]['cards'].remove(t)
+							hands[players[rplayer]][current_turn]['hand'].remove(t)
 						print("no error", line_index+1)
 					except ValueError:
 						print("value error", line_index+1)
-						pass#hands[players[player]]['deck'].remove(t)
 
 			# The game is over
 			if line.find("------------ Game Over ------------") != -1:
