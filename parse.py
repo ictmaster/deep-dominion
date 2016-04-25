@@ -47,7 +47,7 @@ for entry in os.scandir('./data/min_goko/'):
 		current_turn   = -1 # -1 is before game, -2 is after
 		current_player = -1
 		last_player    = -1
-		last_turn       = -1
+		last_turn      = -1
 		hands          = {'0':{},'1':{}}
 		log_lines      = data.split('\n')
 
@@ -61,7 +61,6 @@ for entry in os.scandir('./data/min_goko/'):
 				scards = list(map(str.strip,line[line.find(starting_match)+len(starting_match):].split(',')))
 				player = line[:line.find(starting_match)].strip()
 				players[player] = {'id':str(len(players)), 'turn':-1}
-
 				hands[players[player]['id']][current_turn] = {'hand':[],'deck':scards}
 
 			# Who's turn and turn nr
@@ -73,14 +72,11 @@ for entry in os.scandir('./data/min_goko/'):
 				old_turn       = players[p]['turn']
 
 				if current_turn != old_turn:
-					for key,val in players.items():
-						try:
-							hands[val['id']][old_turn]['hand'] = hands[val['id']][old_turn]['hand'][-5:]
-
-							# hands[val['id']][last_turn]['hand'] = hands[val['id']][last_turn]['hand'][-5:]
-							hands[val['id']][current_turn] = {'hand':[],'deck':[]}
-						except KeyError as ke:
-							pass #print("Key Error ->>>",ke)
+					try:
+						hands[current_player][old_turn]['hand'] = hands[current_player][old_turn]['hand'][-5:]
+						hands[current_player][current_turn] = {'hand':[],'deck':[]}
+					except KeyError as ke:
+						print("Key Error ->>>",ke)
 
 				players[p]['turn'] = current_turn
 				last_turn          = current_turn
