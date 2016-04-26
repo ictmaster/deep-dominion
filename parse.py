@@ -49,12 +49,26 @@ for entry in os.scandir('./data/min_goko/'):
 		last_player    = -1
 		last_turn      = -1
 		hands          = {'0':{},'1':{}}
+		tmp_hand       = []
 		log_lines      = data.split('\n')
 
-		for line_index, line in enumerate(log_lines):			
+		el = False
+		for line_index, line in enumerate(log_lines):	
+			
+			if line_index+1 == 601:
+				el = True
+
+			if el:
+				import pdb; pdb.set_trace()				
+
+
 			# Game setup
 			if line.find(supply_match) != -1:
-				document['supply_cards'] = list(map(str.strip, line[line.find(supply_match)+len(supply_match):].split(',')))
+				supply_cards =list(map(str.strip, line[line.find(supply_match)+len(supply_match):].split(',')))
+				document['supply_cards'] = supply_cards
+				for card in supply_cards:
+					cursor = db.cards.find({'name':card})
+					import pdb;pdb.set_trace()
 			
 			# Players for reference when parsing log files
 			if line.find(starting_match) != -1:
@@ -74,7 +88,9 @@ for entry in os.scandir('./data/min_goko/'):
 				if current_turn != old_turn:
 					try:
 						hands[current_player][old_turn]['hand'] = hands[current_player][old_turn]['hand'][-5:]
+						tmp_hand = hands[current_player][old_turn]['hand'][-5:]
 						hands[current_player][current_turn] = {'hand':[],'deck':[]}
+
 					except KeyError as ke:
 						print("Key Error ->>>",ke)
 
@@ -90,15 +106,21 @@ for entry in os.scandir('./data/min_goko/'):
 			if line.find(draws_match) != -1:
 				draws = list(map(str.strip,line[line.find(draws_match)+len(draws_match):].split(',')))
 				player = line[:line.find(draws_match)].strip()
+				
+				tmp_hand.extend(draws)
 				hands[players[player]['id']][current_turn]['hand'].extend(draws)
 
-			"""
+			if line.find(reveals_match) != -1:
+				reveals = list(map(str.strip,line[line.find(reveals_match)+len(reveals_match):].split(',')))
+				player = line[:line.find(reveals_match)].strip()
+				
+				tmp_hand.extend(reveals)
+			
 			if line.find(trashes_match) != -1:
 				reavealed = []
 
 				trash = list(map(str.strip,line[line.find(trashes_match)+len(trashes_match):].split(',')))
 				player = line[:line.find(trashes_match)].strip()
-
 
 				if log_lines[line_index-1].find(reveals_match) != -1:
 					revealed = list(map(str.strip,log_lines[line_index-1][log_lines[line_index-1].find(reveals_match)+len(reveals_match):].split(',')))
@@ -107,20 +129,30 @@ for entry in os.scandir('./data/min_goko/'):
 				for t in trash:
 					try:
 						if t in revealed:
-							hands[players[rplayer]['id']][current_turn]['deck'].remove(t)
+							pass#TODO: maybe create deck hands[players[rplayer]['id']][current_turn]['deck'].remove(t)
 						else:
-							hands[players[rplayer]['id']][current_turn]['hand'].remove(t)
+							tmp_hand.remove(t)#hands[players[rplayer]['id']][current_turn]['hand'].remove(t)
 					except ValueError as ve:
 						print("value error", line_index+1, ve)
-						import pdb;pdb.set_trace()
 
 				del revealed[:]
-			"""
-			"""
+			
+			if line.find(discards_match) != -1:
+				discards = list(map(str.strip,line[line.find(discards_match)+len(discards_match):].split(',')))
+				player = line[:line.find(discards_match)].strip()
+
+				for d in discards:
+					try:
+						tmp_hand.remove(d)
+					except ValueError as ve:
+						pass#print("value error", line_index+1, ve)
+
 			if line.find(plays_match) != -1:
 				plays = list(map(str.strip,line[line.find(plays_match)+len(plays_match):].split(',')))
 				player = line[:line.find(plays_match)].strip()
-				# print("------{} turn: {}------\nHAND:{}\n\n".format(player, current_turn, hands[players[player]['id']][current_turn]['hand']))
+				print(line_index+1,len(tmp_hand))
+				#print("HAND: {}, PLAYS: {}".format(tmp_hand, plays))
+
 				for p in plays:
 					n = p.split()[0]
 					c = " ".join(p.split()[1:])
@@ -131,12 +163,11 @@ for entry in os.scandir('./data/min_goko/'):
 
 						for x in range(int(n)):
 							# print("removing {} of {}".format(n,c))
-							hands[players[player]['id']][current_turn]['hand'].remove(c)
+							tmp_hand.remove(c)
 
 					except ValueError as ve:
-						pass # print("value error", line_index+1, ve)
-				# print("------------")
-			"""
+						pass#print("value error", line_index+1, ve)
+			
 			# The game is over
 			if line.find("------------ Game Over ------------") != -1:
 				current_turn = -2 # -1 is before game, -2 is after
