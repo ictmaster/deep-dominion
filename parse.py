@@ -10,6 +10,7 @@ import time
 from pymongo import MongoClient
 import re
 import sys
+from threading import Thread
 
 start_time = time.time()
 
@@ -147,7 +148,7 @@ for entry in os.scandir('./data/goko/'):
 				tmp_hand.extend(reveals)
 			
 			elif trashes_match in line:
-				reavealed = []
+				revealed = []
 
 				trash = list(map(str.strip,line[line.find(trashes_match)+len(trashes_match):].split(',')))
 				player = line[:line.find(trashes_match)].strip()
@@ -210,11 +211,11 @@ for entry in os.scandir('./data/goko/'):
 			elif game_over_match in line: # The game is over
 				current_turn = -2 # -1 is before game, -2 is after
 				current_player = -2
-		
+			
 		document['actions'] = actions[:]
 		del actions[:]
 		#print(document)
 		result = db.logs.insert_one(document)
-		# print(result)
+		print("{} - {}").format(entry.name, result)
 		
 print("Script took {0:0.4f} seconds...".format(time.time()-start_time))
