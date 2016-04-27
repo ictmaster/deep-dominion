@@ -40,7 +40,7 @@ buys_match      = " - buys "
 plays_match     = " - plays "
 discards_match  = " - discards "
 game_over_match = "------------ Game Over ------------"
-placed_match     = "1st place: "
+placed_match    = "1st place: "
 mapped_cards    = {} # Cards mapped to id's in memory
 
 # Check if counter for database card entries exists
@@ -49,19 +49,20 @@ if db.counter.find({'_id':'cardid'}).count() == 0:
 global card_count
 card_count = 0
 def get_card_id(card_name):
+	global card_count
 	try:
-		return mapped_cards[card_name]
+		mcard = mapped_cards[card_name]
+		card_count += 1
+		return mcard
 	except KeyError:
-		global card_count
-		card_count+=1
 		cursor = db.cards.find({'name':card_name})
 		if cursor.count() == 0:
 			next_id = get_next_sequence(db.counter, 'cardid')
-			mapped_cards[card] = next_id
-			db.cards.insert_one({'_id':next_id, 'name':card})
+			mapped_cards[card_name] = next_id
+			db.cards.insert_one({'_id':next_id, 'name':card_name})
+			card_count += 1
 		else:
-			c = db.cards.find({'name':card}, {'name':1,'_id':1})
-			import pdb;pdb.set_trace()
+			c = db.cards.find({'name':card_name}, {'name':1,'_id':1})
 			mapped_cards[c[0]['name']] = c[0]['_id']
 			return c[0]['_id']
 
@@ -216,7 +217,4 @@ for entry in os.scandir('./data/min_goko/'):
 		result = db.logs.insert_one(document)
 		# print(result)
 		
-
-
-
 print("Script took {0:0.4f} seconds...".format(time.time()-start_time))
