@@ -1,9 +1,5 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# 
-# TODO: Store hands for each MOVE (not turn) (maybe only PLAYS/BUYS)
-# 
-# 
 from jlib import LOG
 import os
 import time
@@ -16,9 +12,8 @@ start_time = time.time()
 
 client = MongoClient()
 db = client.dominion
-
-
-turn_regex = re.compile('---------- \w+: turn \d+ ----------')
+done = 0
+inserted = 0
 
 # TODO: remove debug function ph(hl)
 def ph(hl):
@@ -31,6 +26,7 @@ def get_next_sequence(collection,name):
 	return collection.find_and_modify(query= { '_id': name },update= { '$inc': {'seq': 1}}, new=True ).get('seq');
 
 # Lines to match for in file
+turn_regex = re.compile('---------- \w+: turn \d+ ----------')
 supply_match    = "Supply cards: "
 starting_match  = "- starting cards: "
 reveals_match   = " - reveals "
@@ -67,18 +63,18 @@ def get_card_id(card_name):
 			mapped_cards[c[0]['name']] = c[0]['_id']
 			return c[0]['_id']
 
+documents = []
 # Using scandir since folder is so large
 for entry in os.scandir('./data/goko/'):
-
+	done += 1
 	# Skip entire file if already processed
 	if db.logs.find({'_id':entry.name}, {'_id': 1}).limit(1).count() != 0:
 		print("skipping", entry.name)
 		continue
-
+	inserted += 1
 	with open(entry.path, 'r', encoding='cp850') as f:
 		data			= f.read()           # The log file
 		log_lines		= data.split('\n')   # Split the datafiles on lines
-		document		= {'_id':entry.name} # The document that will be stored in the database
 		players			= {}                 # Players dictionary
 		current_turn	= -1                 # -1 is before game, -2 is after
 		last_turn		= -1                 # Last turn number ^
@@ -87,7 +83,12 @@ for entry in os.scandir('./data/goko/'):
 		hands			= {'0':{},'1':{}}
 		tmp_hand		= []                 # List to store temporary hands
 		actions			= []                 # List to store actions that will be added to document (0 = plays, 1 = buys) [(0,[1,2,32]),(1,[23])]
-		winner			= [l[l.find(placed_match)+len(placed_match):].strip() for l in log_lines if placed_match in l][0]
+		
+		try:
+			winner			= [l[l.find(placed_match)+len(placed_match):].strip() for l in log_lines if placed_match in l][0]
+		except:
+			print("Couldn't find winner for file {}, skipping...".format(entry.path))
+			continue
 
 		for line_index, line in enumerate(log_lines):
 
@@ -199,23 +200,29 @@ for entry in os.scandir('./data/goko/'):
 					except ValueError as ve:
 						pass # print("value error", line_index+1, ve)
 				if player == winner:
-					actions.append((0, [get_card_id(x) for x in before_hand], [get_card_id(x) for x in played_cards]))
+					actions.append([0, [get_card_id(x) for x in before_hand], [get_card_id(x) for x in played_cards]])
 					#print("HAND: {}, PLAYS: {}".format([get_card_id(x) for x in before_hand], [get_card_id(x) for x in played_cards]))
 			elif buys_match in line:
 				buys = list(map(str.strip,line[line.find(buys_match)+len(buys_match):].split(',')))
 				player = line[:line.find(buys_match)].strip()
 				if player == winner:
-					actions.append((1, [get_card_id(x) for x in tmp_hand], [get_card_id(x) for x in buys]))
+					actions.append([1, [get_card_id(x) for x in tmp_hand], [get_card_id(x) for x in buys]])
 					#print("HAND: {}, BUYS: {}".format([get_card_id(x) for x in tmp_hand], [get_card_id(x) for x in buys]))
 
 			elif game_over_match in line: # The game is over
 				current_turn = -2 # -1 is before game, -2 is after
 				current_player = -2
-			
-		document['actions'] = actions[:]
+
+		documents.append({'_id':entry.name, 'actions':actions[:]}) # The document that will be stored in the database
 		del actions[:]
-		#print(document)
-		result = db.logs.insert_one(document)
-		print("{} - {}").format(entry.name, result)
-		
+
+	if inserted % 500 == 0:
+		result = db.logs.insert_many(documents, ordered=False)
+		del documents[:]
+		print("{} - {} ({} done)".format(entry.name, result, done))
+
+result = db.logs.insert_many(documents, ordered=False)
+del documents[:]
+print("{} - {} ({} done)".format(entry.name, result, done))
+
 print("Script took {0:0.4f} seconds...".format(time.time()-start_time))
