@@ -67,7 +67,7 @@ def get_card_id(card_name):
 			return c[0]['_id']
 
 # Using scandir since folder is so large
-for entry in os.scandir('./data/min_goko/'):
+for entry in os.scandir('./data/goko/'):
 
 	# Skip entire file if already processed
 	if db.logs.find({'_id':entry.name}, {'_id': 1}).limit(1).count() != 0:
