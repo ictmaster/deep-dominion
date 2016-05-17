@@ -2,7 +2,7 @@
 Deep Learning for Dominion project created for the IKT441 - Deep learning course at the University of Agder.
 
 ## Dependencies
- - [Python 3.x](https://docs.python.org/3/) for parse.py & scrape.py
+ - [Python 3.5+](https://docs.python.org/3/) for parse.py & scrape.py
  - [Python 2.7](https://docs.python.org/2/) for run.py (Training and testing)
  - [MongoDB](https://www.mongodb.org/)
  - [Pyquery](https://pypi.python.org/pypi/pyquery)
