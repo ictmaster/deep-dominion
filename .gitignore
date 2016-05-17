@@ -1,5 +1,6 @@
 noduplicates_linkfile.txt
 linkfile.txt
+sorted_linkfile.txt
 data/
 *.h5
 *.json
