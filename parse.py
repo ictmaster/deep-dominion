@@ -27,22 +27,29 @@ def get_next_sequence(collection,name):
 
 # Lines to match for in file
 turn_regex = re.compile('---------- \w+: turn \d+ ----------')
-supply_match    = "Supply cards: "
-starting_match  = "- starting cards: "
-reveals_match   = " - reveals "
-draws_match     = " - draws "
-trashes_match   = " - trashes "
-gains_match     = " - gains "
-buys_match      = " - buys "
-plays_match     = " - plays "
-discards_match  = " - discards "
-game_over_match = "------------ Game Over ------------"
-placed_match    = "1st place: "
-mapped_cards    = {} # Cards mapped to id's in memory
+supply_match       = "Supply cards: "
+starting_match     = "- starting cards: "
+reveals_match      = " - reveals "
+reveals_hand_match = " - reveals hand: "
+reveals_reac_match = " - reveals reaction "
+reveals_bane_match = " - reveals bane "
+draws_match        = " - draws "
+trashes_match      = " - trashes "
+gains_match        = " - gains "
+buys_match         = " - buys "
+plays_match        = " - plays "
+discards_match     = " - discards "
+game_over_match    = "------------ Game Over ------------"
+placed_match       = "1st place: "
+mapped_cards       = {} # Cards mapped to id's in memory
 
 # Check if counter for database card entries exists
 if db.counter.find({'_id':'cardid'}).count() == 0:
 	db.counter.insert_one({'_id':'cardid', 'seq':0})
+else:
+	print("[WARNING]:Database not empty!")
+	time.sleep(1)
+
 global card_count
 card_count = 0
 def get_card_id(card_name):
@@ -54,6 +61,8 @@ def get_card_id(card_name):
 	except KeyError:
 		cursor = db.cards.find({'name':card_name})
 		if cursor.count() == 0:
+			if card_name == "":
+				return None
 			next_id = get_next_sequence(db.counter, 'cardid')
 			mapped_cards[card_name] = next_id
 			db.cards.insert_one({'_id':next_id, 'name':card_name})
@@ -143,11 +152,18 @@ for entry in os.scandir('./data/goko/'):
 					hands[players[player]['id']][current_turn]['hand'].extend(draws)
 
 			elif reveals_match in line:
-				reveals = list(map(str.strip,line[line.find(reveals_match)+len(reveals_match):].split(',')))
-				player = line[:line.find(reveals_match)].strip()
-				
+				this_match = reveals_match
+				if reveals_hand_match in line:
+					this_match = reveals_hand_match
+				elif reveals_bane_match in line:
+					this_match = reveals_bane_match
+				elif reveals_reac_match in line:
+					this_match = reveals_reac_match
+
+				reveals = list(map(str.strip,line[line.find(this_match)+len(this_match):].split(',')))
+				player = line[:line.find(this_match)].strip()	
 				tmp_hand.extend(reveals)
-			
+
 			elif trashes_match in line:
 				revealed = []
 
