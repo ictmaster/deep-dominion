@@ -5,6 +5,7 @@ from pymongo import MongoClient
 import sys
 import time
 import os
+import random
 
 np.random.seed(1337)
 
@@ -19,6 +20,11 @@ start_time = time.time()
 
 client = MongoClient()
 db = client.dominion
+
+def check_prediction(model, input_vector, answer):
+	if np.argmax(model.predict(np.array([input_vector]))) == np.argmax(answer):
+		return True
+	return False
 
 def structurize_data(rows, max_features):
 	x,y = ([],[])
@@ -35,14 +41,14 @@ def structurize_data(rows, max_features):
 						except:
 							continue
 					x.append(np.array(tmp_hand))
-					y.append(np.array([action[0], played_card]))
+					y.append(np.array(played_card-1)) # TODO: somehow include this action[0]
 	# Convert to numpy array
 	x = np.array(x)
 	y = np.array(y)
 	# Pad for equal length
 	x = sequence.pad_sequences(x, maxlen=max_features)
-	x = x.astype('float32')
-	y = y.astype('float32')
+	#x = x.astype('float32')
+	#y = y.astype('float32')
 
 	return (x,y)
 
@@ -53,10 +59,17 @@ max_features = 50
 batch_size   = 120
 nb_epoch     = 12
 
+num_classes = db.cards.count()
+
 train_rows = db.logs.find({}).limit(training_num)
 test_rows = db.logs.find({}).limit(testing_num).skip(training_num)
+
 (X_train, y_train) = structurize_data(train_rows, max_features)
 (X_test, y_test) = structurize_data(test_rows, max_features)
+
+Y_train = np_utils.to_categorical(y_train, num_classes)
+Y_test = np_utils.to_categorical(y_test, num_classes)
+
 
 weights_file = 'seq_weights.h5'
 architecture_file = 'seq_architecture.json'
@@ -74,18 +87,18 @@ else:
 	print("Building model...")
 	model = Sequential()
 
-	model.add(Dense(output_dim=1, input_dim=50))
-	model.add(Activation("relu"))
-	model.add(Dense(output_dim=2))
-	model.add(Activation("softmax"))
+	model.add(Dense(output_dim=33, input_dim=50))
+	model.add(Dropout(0.2))
+	model.add(Dense(output_dim=num_classes)) # All cards
+	model.add(Activation('softmax'))
 
 	model.compile(loss='categorical_crossentropy',
 	              optimizer='adadelta',
 	              metrics=['accuracy'])
 
 	print("Training...")
-	model.fit(X_train, y_train, batch_size=batch_size, nb_epoch=nb_epoch,
-	          verbose=1, validation_data=(X_test, y_test))
+	model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
+	          verbose=1, validation_data=(X_test, Y_test))
 
 	print("Saving model...")
 	model_json_string = model.to_json()
@@ -94,12 +107,10 @@ else:
 		model.save_weights(weights_file, overwrite=True)
 
 print("Testing...")
-score = model.evaluate(X_test, y_test, verbose=1)
+score = model.evaluate(X_test, Y_test, verbose=1)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
-pt = X_test[testing_num / 2]
-pa = y_test[testing_num / 2]
 
 
 
