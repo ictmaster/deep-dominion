@@ -67,6 +67,7 @@ def get_card_id(card_name):
 			mapped_cards[card_name] = next_id
 			db.cards.insert_one({'_id':next_id, 'name':card_name})
 			card_count += 1
+			return next_id
 		else:
 			c = db.cards.find({'name':card_name}, {'name':1,'_id':1})
 			mapped_cards[c[0]['name']] = c[0]['_id']
@@ -92,7 +93,7 @@ for entry in os.scandir('./data/goko/'):
 		hands			= {'0':{},'1':{}}
 		tmp_hand		= []                 # List to store temporary hands
 		actions			= []                 # List to store actions that will be added to document (0 = plays, 1 = buys) [(0,[1,2,32]),(1,[23])]
-		
+		supply_cards_id = []
 		try:
 			winner			= [l[l.find(placed_match)+len(placed_match):].strip() for l in log_lines if placed_match in l][0]
 		except:
@@ -104,7 +105,7 @@ for entry in os.scandir('./data/goko/'):
 			if supply_match in line:# Game setup
 				supply_cards = list(map(str.strip, line[line.find(supply_match)+len(supply_match):].split(',')))
 				for card in supply_cards:
-					get_card_id(card)
+					supply_cards_id.append(get_card_id(card))
 
 				
 			elif starting_match in line:# Players for reference when parsing log files
@@ -229,7 +230,7 @@ for entry in os.scandir('./data/goko/'):
 				current_turn = -2 # -1 is before game, -2 is after
 				current_player = -2
 
-		documents.append({'_id':entry.name, 'actions':actions[:]}) # The document that will be stored in the database
+		documents.append({'_id':entry.name, 'actions':actions[:], 'supply_cards':supply_cards_id}) # The document that will be stored in the database
 		del actions[:]
 
 	if inserted % 500 == 0:
