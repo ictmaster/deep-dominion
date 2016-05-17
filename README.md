@@ -6,6 +6,8 @@ Deep Learning for Dominion project created for the IKT441 - Deep learning course
  - [MongoDB](https://www.mongodb.org/)
  - [Pyquery](https://pypi.python.org/pypi/pyquery)
  - [PyMongo](https://api.mongodb.org/python/current/)
+ - [Theano](http://deeplearning.net/software/theano/)
+ - [Keras](http://keras.io/)
 
 ## Authors
  - Jonas Natten - [jonas@natten.it](mailto:jonas@natten.it)
