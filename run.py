@@ -27,7 +27,7 @@ def check_prediction(model, input_vector, answer):
 	return False
 
 def structurize_data(rows, max_features):
-	x,y = ([],[])
+	x_list,y_list = ([],[])
 	for r in rows:
 		for action in r['actions']:
 			hand = action[1]
@@ -40,29 +40,31 @@ def structurize_data(rows, max_features):
 							hand.remove(played_card)
 						except:
 							continue
-					x.append(np.array(tmp_hand))
-					y.append(np.array(played_card-1)) # TODO: somehow include this action[0]
+
+					tmp_x = np.array([0]*(max_features-len(tmp_hand))+[c for c in tmp_hand if x_list is not None])
+					x_list.append(tmp_x)
+					y_list.append(np.array(played_card-1)) # TODO: somehow include this action[0]
+
 	# Convert to numpy array
-	x = np.array(x)
-	y = np.array(y)
-	# Pad for equal length
-	x = sequence.pad_sequences(x, maxlen=max_features)
-	#x = x.astype('float32')
-	#y = y.astype('float32')
+	x_list = np.array(x_list)
+	y_list = np.array(y_list)
+	x_list = x_list.astype('float32')
+	y_list = y_list.astype('float32')
 
-	return (x,y)
+	return (x_list,y_list)
 
-training_num = 100
-testing_num  = 10
+training_num = 10000
+testing_num  = 100
 
 max_features = 50
-batch_size   = 120
+batch_size   = 128
 nb_epoch     = 12
 
 num_classes = db.cards.count()
 
 train_rows = db.logs.find({}).limit(training_num)
 test_rows = db.logs.find({}).limit(testing_num).skip(training_num)
+
 
 (X_train, y_train) = structurize_data(train_rows, max_features)
 (X_test, y_test) = structurize_data(test_rows, max_features)
@@ -87,8 +89,8 @@ else:
 	print("Building model...")
 	model = Sequential()
 
-	model.add(Dense(output_dim=33, input_dim=50))
-	model.add(Dropout(0.2))
+	model.add(Dense(output_dim=32, input_dim=max_features))
+	#model.add(Dropout(0.2))
 	model.add(Dense(output_dim=num_classes)) # All cards
 	model.add(Activation('softmax'))
 
