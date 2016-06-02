@@ -56,8 +56,8 @@ def structurize_data(rows, max_features):
 	y_list = y_list.astype('float32')
 	return (x_list,y_list)
 
-training_num = 10000
-testing_num  = 100
+training_num = 100000
+testing_num  = 1000
 skip_num = 0
 
 max_features = 50
@@ -127,10 +127,10 @@ else:
 		af.write(model_json_string)
 		model.save_weights(weights_file, overwrite=True)
 
-#print("Testing...")
-#score = model.evaluate(X_test, Y_test, verbose=1)
-#print('Test score:', score[0])
-#print('Test accuracy:', score[1])
+print("Testing...")
+score = model.evaluate(X_test, Y_test, verbose=1)
+print('Test score:', score[0])
+print('Test accuracy:', score[1])
 
 #for x in X_test:
 pr = model.predict(X_test, batch_size=batch_size)
